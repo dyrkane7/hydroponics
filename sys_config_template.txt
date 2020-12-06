@@ -1,0 +1,12 @@
+./config_sys -ltstart hh:mm:ss -ltstop hh:mm:ss -llocal hh:mm:ss -lintensity 00 -ptstart hh:mm:ss -pstop hh:mm:ss -pcycle hh:mm:ss -ppump hh:mm:ss -plocal hh:mm:ss
+
+key:name
+a:ltstart
+b:ltstop
+c:ltlocal
+d:lintensity
+e:ptstart
+f:ptstop
+g:ptcycle
+h:ptpump
+i:ptlocal
