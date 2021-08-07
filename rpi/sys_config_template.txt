@@ -1,4 +1,4 @@
-./config_sys -ltstart hh:mm:ss -ltstop hh:mm:ss -llocal hh:mm:ss -lintensity 00 -ptstart hh:mm:ss -pstop hh:mm:ss -pcycle hh:mm:ss -ppump hh:mm:ss -plocal hh:mm:ss
+./config_sys --ltstart="hh:mm:ss" --ltstop="hh:mm:ss" --ltlocal="hh:mm:ss" --lintensity="00" --ptstart="hh:mm:ss" --ptstop="hh:mm:ss" --ptcycle="hh:mm:ss" --ptpump="hh:mm:ss" --ptlocal="hh:mm:ss"
 
 key:name
 a:ltstart

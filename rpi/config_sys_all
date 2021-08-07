@@ -1,0 +1,13 @@
+#!/bin/bash
+
+./config_sys --ptlocal
+./config_sys --ptstart="08:00:00"
+./config_sys --ptstop="18:00:00"
+./config_sys --ptcycle="04:00:00"
+./config_sys --ptpump="00:02:00"
+
+
+# ./config_sys --ltlocal
+# ./config_sys --ltstart="08:00:00"
+# ./config_sys --ltstop="18:00:00"
+# ./config_sys --lintensity="80"

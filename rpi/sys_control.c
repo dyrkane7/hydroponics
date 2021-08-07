@@ -62,6 +62,7 @@ int RADIO_tx(int fd, radio_config_t config, radio_pl_t pl) {
         };
 	
 	if (pl.cmd == read_cmd) {
+		//printf("read cmd\n");
 		tx_pl[0] = 'R';
 		switch (pl.param) {
 			case t_start:
@@ -85,9 +86,118 @@ int RADIO_tx(int fd, radio_config_t config, radio_pl_t pl) {
 			case temperature:
 				tx_pl[1] = 'T';
 				break;
+			case ph:
+				tx_pl[1] = 'P';
+				tx_pl[2] = '1';
+				break;
+			case ec:
+				tx_pl[1] = 'E';
+				tx_pl[2] = '1';
+				break;
+			case wls:
+				tx_pl[1] = 'W';
+				tx_pl[2] = '1';
+				break;
+			case tc1:
+				tx_pl[1] = 'T';
+				tx_pl[2] = '1';
+				break;
+			case tc2:
+				tx_pl[1] = 'T';
+				tx_pl[2] = '2';
+				break;
+			case tc3:
+				tx_pl[1] = 'T';
+				tx_pl[2] = '3';
+				break;
+			case tc4:
+				tx_pl[1] = 'T';
+				tx_pl[2] = '4';
+				break;
+			case cj1:
+				tx_pl[1] = 'C';
+				tx_pl[2] = '1';
+				break;
+			case cj2:
+				tx_pl[1] = 'C';
+				tx_pl[2] = '2';
+				break;
+			case cj3:
+				tx_pl[1] = 'C';
+				tx_pl[2] = '3';
+				break;
+			case cj4:
+				tx_pl[1] = 'C';
+				tx_pl[2] = '4';
+				break;		
+			case hum1:
+				tx_pl[1] = 'H';
+				tx_pl[2] = '1';
+				break;
+			case hum2:
+				tx_pl[1] = 'H';
+				tx_pl[2] = '2';
+				break;
+			case hum3:
+				tx_pl[1] = 'H';
+				tx_pl[2] = '3';
+				break;
+			case hum4:
+				tx_pl[1] = 'H';
+				tx_pl[2] = '4';
+				break;
+			case tn1:
+				tx_pl[1] = 't';
+				tx_pl[2] = '1';
+				break;
+			case tn2:
+				tx_pl[1] = 't';
+				tx_pl[2] = '2';
+				break;
+			case tn3:
+				tx_pl[1] = 't';
+				tx_pl[2] = '3';
+				break;
+			case tn4:
+				tx_pl[1] = 't';
+				tx_pl[2] = '4';
+				break;
+			case light1:
+				tx_pl[1] = 'L';
+				tx_pl[2] = '1';
+				break;
+			case light2:
+				tx_pl[1] = 'L';
+				tx_pl[2] = '2';
+				break;
+			case light3:
+				tx_pl[1] = 'L';
+				tx_pl[2] = '3';
+				break;
+			case light4:
+				tx_pl[1] = 'L';
+				tx_pl[2] = '4';
+				break;
+			case mois1:
+				tx_pl[1] = 'M';
+				tx_pl[2] = '1';
+				break;
+			case mois2:
+				tx_pl[1] = 'M';
+				tx_pl[2] = '2';
+				break;
+			case mois3:
+				tx_pl[1] = 'M';
+				tx_pl[2] = '3';
+				break;
+			case mois4:
+				tx_pl[1] = 'M';
+				tx_pl[2] = '4';
+				break;
 		}
 
 	} else if (pl.cmd == write_cmd) {
+		printf("write cmd\n");
 		tx_pl[0] = 'W';
 		switch (pl.param) {
 			case t_start:
@@ -133,12 +243,20 @@ int RADIO_tx(int fd, radio_config_t config, radio_pl_t pl) {
         if (tx_pl[0] == 'W') {
                 NRF_write_payload(&tr, fd, tx_pl, 8);
         } else if (tx_pl[0] == 'R') {
-                NRF_write_payload(&tr, fd, tx_pl, 2);
-        }	
+        	if (pl.node != sensors) {
+			NRF_write_payload(&tr, fd, tx_pl, 2);
+		} else if (pl.node == sensors) {
+			//printf("writing to sensor node\n");
+			NRF_write_payload(&tr, fd, tx_pl, 3);
+		}
+        } else {
+		printf("Error: tx_pl[0] must be 'W' or 'R'\n");
+	}	
 	
         NRF_clear_prim_rx(&tr, fd);
-        config.interface.ce_set(1);
-        printf("waiting for data to send\n");
+        delayMicroseconds(100); //added 5/8/21 1pm
+	config.interface.ce_set(1);
+        //printf("waiting for data to send\n");
  	t0 = millis();
 	t_loop = 0;
         while (!(TX_DS_BIT & NRF_read_status_reg(&tr, fd)) && (t_loop < tx_timeout_ms)) {
@@ -166,7 +284,7 @@ int RADIO_tx(int fd, radio_config_t config, radio_pl_t pl) {
 	} else 
 		NRF_flush_tx(&tr, fd);{
 		NRF_clear_tx_ds(&tr, fd);
-		printf("data sent\n");
+		//printf("data sent\n");
 		return RADIO_NO_ERROR;
 	} 				
 }
@@ -174,7 +292,7 @@ int RADIO_tx(int fd, radio_config_t config, radio_pl_t pl) {
 int RADIO_rx(int fd, radio_config_t config, radio_pl_t *pl) {
         int i, pw;
         unsigned int t0, t_loop;
-        unsigned int rx_timeout_ms = 1000;
+        unsigned int rx_timeout_ms = 8000;
         uint8_t tx_pl[MAX_TX_MSG_LEN];
         uint8_t rx_pl[MAX_RX_MSG_LEN] = {0,0,0,0,0,0};
         uint8_t pl_param_val[6];
@@ -191,7 +309,7 @@ int RADIO_rx(int fd, radio_config_t config, radio_pl_t *pl) {
 	
 	NRF_set_prim_rx(&tr, fd);
 	config.interface.ce_set(1);
-	printf("waiting for rx data...\n");
+	//printf("waiting for rx data...\n");
 	t0 = millis();
 	t_loop = 0;
         while (!(RX_DR_BIT & NRF_read_status_reg(&tr, fd)) && (t_loop < rx_timeout_ms)) {
@@ -249,8 +367,14 @@ int RADIO_config_node(int fd, radio_config_t config, radio_pl_t rx_pl, radio_pl_
 			config.rx_addr[i] = pipe_addr[1][i];
 			config.tx_addr[i] = pipe_addr[1][i];
 		}
+	} else if (tx_pl.node == sensors) {
+		for (i = 0; i < 5; i++) {
+			config.rx_addr[i] = pipe_addr[2][i];
+			config.tx_addr[i] = pipe_addr[2][i];
+		}
 	}
 	rx_pl.cmd = read_cmd; // always a read command
+	
 	
 	printf("t_start\n");
 	rx_pl.param = t_start;
@@ -459,6 +583,286 @@ void pl_set_param(uint8_t ascii_bytes[6], struct radio_pl *pl) {
 			pl->temperature += 1000 * (ascii_bytes[3] - '0'); // thousands place
 			printf("temperature: %u\n", pl->temperature);
 			break;
+		case ph: // assumes water temperature sensor is TC#4
+			pl->ph = raw_to_float(ascii_bytes, pl->param, pl->tc4);
+			printf("ph: %f\n", pl->ph);
+			break;   
+		case ec: // assumes water temperature sensor is TC#4
+			pl->ec = raw_to_float(ascii_bytes, pl->param, pl->tc4);
+			printf("ec: %f\n", pl->ec);
+			break;   
+		case wls: 
+			pl->wls = raw_to_float(ascii_bytes, pl->param, pl->tc4);
+			printf("wls: %f\n", pl->wls);
+			break;   
+		case tc1: 
+			pl->tc1 = raw_to_float(ascii_bytes, pl->param, pl->tc4);
+			printf("tc1: %f\n", pl->tc1);
+			break;   
+		case tc2: 
+			pl->tc2 = raw_to_float(ascii_bytes, pl->param, pl->tc4);
+			printf("tc2: %f\n", pl->tc2);
+			break;   
+		case tc3: 
+			pl->tc3 = raw_to_float(ascii_bytes, pl->param, pl->tc4);
+			printf("tc3: %f\n", pl->tc3);
+			break;   
+		case tc4: 
+			pl->tc4 = raw_to_float(ascii_bytes, pl->param, pl->tc4);
+			printf("tc4: %f\n", pl->tc4);
+			break;   
+		case cj1: 
+			pl->cj1 = raw_to_float(ascii_bytes, pl->param, pl->tc4);
+			printf("cj1: %f\n", pl->cj1);
+			break;   
+		case cj2: 
+			pl->cj2 = raw_to_float(ascii_bytes, pl->param, pl->tc4);
+			printf("cj2: %f\n", pl->cj2);
+			break;   
+		case cj3: 
+			pl->cj3 = raw_to_float(ascii_bytes, pl->param, pl->tc4);
+			printf("cj3: %f\n", pl->cj3);
+			break;   
+		case cj4: 
+			pl->cj4 = raw_to_float(ascii_bytes, pl->param, pl->tc4);
+			printf("cj4: %f\n", pl->cj4);
+			break;   
+		case hum1: 
+			pl->hum1 = raw_to_float(ascii_bytes, pl->param, pl->tc4);
+			printf("hum1: %f\n", pl->hum1);
+			break;   
+		case hum2: 
+			pl->hum2 = raw_to_float(ascii_bytes, pl->param, pl->tc4);
+			printf("hum2: %f\n", pl->hum2);
+			break;   
+		case hum3: 
+			pl->hum3 = raw_to_float(ascii_bytes, pl->param, pl->tc4);
+			printf("hum3: %f\n", pl->hum3);
+			break;   
+		case hum4: 
+			pl->hum4 = raw_to_float(ascii_bytes, pl->param, pl->tc4);
+			printf("hum4: %f\n", pl->hum4);
+			break;   
+		case tn1: 
+			pl->tn1 = raw_to_float(ascii_bytes, pl->param, pl->tc4);
+			printf("tn1: %f\n", pl->tn1);
+			break;   
+		case tn2: 
+			pl->tn2 = raw_to_float(ascii_bytes, pl->param, pl->tc4);
+			printf("tn2: %f\n", pl->tn2);
+			break;   
+		case tn3: 
+			pl->tn3 = raw_to_float(ascii_bytes, pl->param, pl->tc4);
+			printf("tn3: %f\n", pl->tn3);
+			break;   
+		case tn4: 
+			pl->tn4 = raw_to_float(ascii_bytes, pl->param, pl->tc4);
+			printf("tn4: %f\n", pl->tn4);
+			break;   
+		case light1: 
+			pl->light1 = raw_to_float(ascii_bytes, pl->param, pl->tc4);
+			printf("light1: %f\n", pl->light1);
+			break;   
+		case light2: 
+			pl->light2 = raw_to_float(ascii_bytes, pl->param, pl->tc4);
+			printf("light2: %f\n", pl->light2);
+			break;   
+		case light3: 
+			pl->light3 = raw_to_float(ascii_bytes, pl->param, pl->tc4);
+			printf("light3: %f\n", pl->light3);
+			break;   
+		case light4: 
+			pl->light4 = raw_to_float(ascii_bytes, pl->param, pl->tc4);
+			printf("light4: %f\n", pl->light4);
+			break;   
+		case mois1: 
+			pl->mois1 = raw_to_float(ascii_bytes, pl->param, pl->tc4);
+			printf("mois1: %f\n", pl->mois1);
+			break;   
+		case mois2: 
+			pl->mois2 = raw_to_float(ascii_bytes, pl->param, pl->tc4);
+			printf("mois2: %f\n", pl->mois2);
+			break;   
+		case mois3: 
+			pl->mois3 = raw_to_float(ascii_bytes, pl->param, pl->tc4);
+			printf("mois3: %f\n", pl->mois3);
+			break;   
+		case mois4: 
+			pl->mois4 = raw_to_float(ascii_bytes, pl->param, pl->tc4);
+			printf("mois4: %f\n", pl->mois4);
+			break;   
 	}	
+}
+
+float pl_read_param(enum param_types param, struct radio_pl*  pl) {
+	float result = 0;
+	switch (param) {	
+		case ph: // assumes water temperature sensor is TC#4
+			result = pl->ph;
+			break;   
+		case ec: // assumes water temperature sensor is TC#4
+			result = pl->ec;
+			break;   
+		case wls: 
+			result = pl->wls;
+			break;   
+		case tc1: 
+			result = pl->tc1;
+			break;   
+		case tc2: 
+			result = pl->tc2;
+			break;   
+		case tc3: 
+			result = pl->tc3;
+			break;   
+		case tc4: 
+			result = pl->tc4;
+			break;   
+		case cj1: 
+			result = pl->cj1;
+			break;   
+		case cj2: 
+			result = pl->cj2;
+			break;   
+		case cj3: 
+			result = pl->cj3;
+			break;   
+		case cj4: 
+			result = pl->cj4;
+			break;   
+		case hum1: 
+			result = pl->hum1;
+			break;   
+		case hum2: 
+			result = pl->hum2;
+			break;   
+		case hum3: 
+			result = pl->hum3;
+			break;   
+		case hum4: 
+			result = pl->hum4;
+			break;   
+		case tn1: 
+			result = pl->tn1;
+			break;   
+		case tn2: 
+			result = pl->tn2;
+			break;   
+		case tn3: 
+			result = pl->tn3;
+			break;   
+		case tn4: 
+			result = pl->tn4;
+			break;   
+		case light1: 
+			result = pl->light1;
+			break;   
+		case light2: 
+			result = pl->light2;
+			break;   
+		case light3: 
+			result = pl->light3;
+			break;   
+		case light4: 
+			result = pl->light4;
+			break;   
+		case mois1: 
+			result = pl->mois1;
+			break;   
+		case mois2: 
+			result = pl->mois2;
+			break;   
+		case mois3: 
+			result = pl->mois3;
+			break;   
+		case mois4: 
+			result = pl->mois4;
+			break;   
+	}	
+	return result;
+}
+
+float raw_twater_to_float(uint8_t raw_data[4]) {
+        float temperature = 0;
+        uint16_t temp_var;
+
+        temp_var = ((uint16_t)raw_data[1] << 8) + raw_data[0];
+        return ((float)temp_var / 4);
+}
+
+float raw_to_float(uint8_t raw_data[4], enum param_types sensor_type, float temperature) {
+        float final_value = 0;
+        float ph_slope, ph_v_raw;
+        float ec_v_raw;
+        uint16_t temp_var1;
+        float temp_var2, temp_var3;
+        uint16_t light_scale_factor;
+
+        switch (sensor_type) {
+                case ph:
+                        temp_var1 = ((uint16_t)raw_data[0] << 8) + raw_data[1];
+                        ph_v_raw = ((float)temp_var1 / 32768) * PH_VCC;
+                        ph_slope = 0.1884*temperature + 54.2;
+                        final_value = 7 - 1000*((ph_v_raw - PH_VREF)/ph_slope);
+                        break;
+                case ec:
+                        temp_var1 = ((uint16_t)raw_data[0] << 8) + raw_data[1];
+                        ec_v_raw = ((float)temp_var1 / 32768) * EC_VCC;
+                        temp_var2 = (ec_v_raw / 820) / 0.0002;
+                        if (temp_var2 < 2.5) {
+                                temp_var3 = temp_var2 * EC_LOW_KVAL;
+                        } else {
+                                temp_var3 = temp_var2 * EC_HIGH_KVAL;
+                        }
+                        final_value = temp_var3 / (1 + 0.0185*(temperature - 25));
+                        break;
+                case wls:
+                        final_value = raw_data[0] * 0.6;
+                        break;
+                case tc1:
+                case tc2:
+                case tc3:
+                case tc4:
+                        temp_var1 = ((uint16_t)raw_data[1] << 8) + raw_data[0];
+                        final_value = (float)temp_var1 / 4;
+                        break;
+                case cj1:
+                case cj2:
+                case cj3:
+                case cj4:
+                        temp_var1 = ((uint16_t)raw_data[1] << 8) + raw_data[0];
+                        final_value = (float)temp_var1 / 16;
+                        break;
+                case hum1:
+                case hum2:
+                case hum3:
+                case hum4:
+                        temp_var1 = ((uint16_t)raw_data[1] << 8) + raw_data[0];
+                        final_value = 100 * ((float)temp_var1 / 65536);
+                        break;
+                case tn1:
+                case tn2:
+                case tn3:
+                case tn4:
+                        temp_var1 = ((uint16_t)raw_data[1] << 8) + raw_data[0];
+                        final_value = -45 + 175 * ((float)temp_var1 / 65536);
+                        break;
+                case light1:
+                case light2:
+                case light3:
+                case light4:
+                        temp_var1 = ((uint16_t)raw_data[1] << 8) + raw_data[0];
+                        light_scale_factor = ((uint16_t)raw_data[3] << 8) + raw_data[2];
+                        final_value = temp_var1 * 1.8432 / light_scale_factor;
+                        break;
+                case mois1:
+                case mois2:
+                case mois3:
+                case mois4:
+                        temp_var1 = ((uint16_t)raw_data[1] << 8) + raw_data[0];
+                        final_value = (float)temp_var1;
+                        break;
+        }
+        return final_value;
 }
 

@@ -1,3 +1,6 @@
-[submodule "nrf_driver_rpi"]
-	path = nrf_driver_rpi
+[submodule "rpi/rpi/nrf_driver_rpi"]
+	path = rpi/rpi/nrf_driver_rpi
+	url = git@github.com:dyrkane7/nrf_driver_rpi.git
+[submodule "rpi/nrf_driver_rpi"]
+	path = rpi/nrf_driver_rpi
 	url = git@github.com:dyrkane7/nrf_driver_rpi.git
